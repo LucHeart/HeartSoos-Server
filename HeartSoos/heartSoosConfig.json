@@ -1,0 +1,12 @@
+{
+  "Paths": [
+    {
+      "Name": "default",
+      "OscConfig": [
+        {
+          "ParameterPath": "/avatar/parameters/HeartRate"
+        }
+      ]
+    }
+  ]
+}
