@@ -42,7 +42,11 @@ public class VrChatOSC : IDisposable
         while (!_cts.IsCancellationRequested)
         {
             var heartRate = GetHeartRate();
-            if(!heartRate.HasValue) continue;
+            if (!heartRate.HasValue)
+            {
+                await Task.Delay(200, _cts.Token);
+                continue;
+            }
             if(_lastHeartRate != heartRate && _lastUpdate.AddSeconds(1) < DateTime.UtcNow)
             {
                 _lastUpdate = DateTime.UtcNow;
