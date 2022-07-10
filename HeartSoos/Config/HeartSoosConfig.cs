@@ -48,7 +48,7 @@ public static class HeartSoosConfig
 
         if (_internalConfig != null) return;
         _logger.LogDebug("Generating and saving new config file");
-        _internalConfig = new HeartSoosConf();
+        _internalConfig = GetDefaultConfig();
         Save();
     }
 
@@ -65,6 +65,24 @@ public static class HeartSoosConfig
             _logger.LogError(e, "Error occurred while saving");
         }
     }
+
+    private static HeartSoosConf GetDefaultConfig() => new()
+    {
+        Paths = new[]
+        {
+            new HeartSoosConf.PushoverConfig
+            {
+                Name = "default",
+                OscConfig = new[]
+                {
+                    new HeartSoosConf.PushoverConfig.VrChatOscPushover
+                    {
+                        ParameterPath = "/avatar/parameters/HeartRate"
+                    }
+                }
+            }
+        }
+    };
 
     public class HeartSoosConf
     {
