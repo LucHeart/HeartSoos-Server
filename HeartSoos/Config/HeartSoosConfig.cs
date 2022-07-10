@@ -1,4 +1,5 @@
 ﻿using Newtonsoft.Json;
+#pragma warning disable CS8618
 
 namespace LucHeart.HeartSoos.Config;
 
@@ -53,12 +54,12 @@ public static class HeartSoosConfig
     }
 
 
-    public static async Task Save()
+    public static void Save()
     {
         _logger.LogDebug("Saving config");
         try
         {
-            await File.WriteAllTextAsync(Path, JsonConvert.SerializeObject(_internalConfig, Formatting.Indented));
+            File.WriteAllText(Path, JsonConvert.SerializeObject(_internalConfig, Formatting.Indented));
         }
         catch (Exception e)
         {

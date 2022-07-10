@@ -8,11 +8,6 @@ namespace LucHeart.HeartSoos;
 
 public class Startup
 {
-    public Startup(IConfiguration configuration) => Configuration = configuration;
-
-    public static IConfiguration Configuration { get; set; }
-
-
     public void ConfigureServices(IServiceCollection services)
     {
         services.AddHttpContextAccessor();
