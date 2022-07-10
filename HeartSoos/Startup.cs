@@ -33,7 +33,8 @@ public class Startup
         var ip = Dns.GetHostEntry(Dns.GetHostName()).AddressList
             .First(x => x.AddressFamily == AddressFamily.InterNetwork);
         logger.LogInformation("Local IP: {Ip}", ip);
-        logger.LogInformation("Default Websocket URL: {Url}", $"ws://{ip}:666/ws/default");
+        logger.LogInformation("Default Websocket URL (IP): {Url}", $"ws://{ip}:666/ws/default");
+        logger.LogInformation("Default Websocket URL (DN): {Url}", $"ws://{Dns.GetHostName()}:666/ws/default");
         
         foreach (var pushoverConfig in HeartSoosConfig.Config.Paths)
         foreach (var pushover in pushoverConfig.OscConfig)
