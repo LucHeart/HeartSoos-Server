@@ -58,7 +58,7 @@ public static class HeartSoosConfig
         _logger.LogDebug("Saving config");
         try
         {
-            await File.WriteAllTextAsync(Path, JsonConvert.SerializeObject(_internalConfig));
+            await File.WriteAllTextAsync(Path, JsonConvert.SerializeObject(_internalConfig, Formatting.Indented));
         }
         catch (Exception e)
         {
