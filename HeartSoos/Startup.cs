@@ -26,7 +26,12 @@ public class Startup
         app.UseLoggingHelperWithRequestLogging();
         if (env.IsDevelopment()) app.UseDeveloperExceptionPage();
 
-        app.UseWebSockets();
+        var webSocketOptions = new WebSocketOptions
+        {
+            KeepAliveInterval = TimeSpan.FromMinutes(2)
+        };
+
+        app.UseWebSockets(webSocketOptions);
         app.UseRouting();
         app.UseEndpoints(endpoints => { endpoints.MapControllers(); });
 
