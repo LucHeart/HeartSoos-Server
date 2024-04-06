@@ -1,4 +1,5 @@
-﻿using Newtonsoft.Json;
+﻿using System.Text.Json;
+
 #pragma warning disable CS8618
 
 namespace LucHeart.HeartSoos.Config;
@@ -7,8 +8,11 @@ public static class HeartSoosConfig
 {
     private static HeartSoosConf? _internalConfig;
     private static readonly string Path = Directory.GetCurrentDirectory() + "/heartSoosConfig.json";
-    private static readonly JsonSerializerSettings SerializerSettings = new();
-    private static ILogger _logger = ApplicationLogging.CreateLogger(typeof(HeartSoosConfig));
+    private static readonly JsonSerializerOptions SerializerSettings = new()
+    {
+        PropertyNameCaseInsensitive = true
+    };
+    private static readonly ILogger Logger = ApplicationLogging.CreateLogger(typeof(HeartSoosConfig));
 
     public static HeartSoosConf Config
     {
@@ -27,28 +31,28 @@ public static class HeartSoosConfig
     private static void TryLoad()
     {
         if (_internalConfig != null) return;
-        _logger.LogDebug("Loading Config");
+        Logger.LogDebug("Loading Config");
         if (File.Exists(Path))
         {
-            _logger.LogTrace("Config file exists");
+            Logger.LogTrace("Config file exists");
             var json = File.ReadAllText(Path);
             if (!string.IsNullOrWhiteSpace(json))
             {
-                _logger.LogTrace("Config file is not empty");
+                Logger.LogTrace("Config file is not empty");
                 try
                 {
-                    _internalConfig = JsonConvert.DeserializeObject<HeartSoosConf>(json, SerializerSettings);
-                    _logger.LogTrace("Deserialized config");
+                    _internalConfig = JsonSerializer.Deserialize<HeartSoosConf>(json, SerializerSettings);
+                    Logger.LogTrace("Deserialized config");
                 }
                 catch (Exception e)
                 {
-                    _logger.LogError(e, "Error during deserialization");
+                    Logger.LogError(e, "Error during deserialization");
                 }
             }
         }
 
         if (_internalConfig != null) return;
-        _logger.LogDebug("Generating and saving new config file");
+        Logger.LogDebug("Generating and saving new config file");
         _internalConfig = GetDefaultConfig();
         Save();
     }
@@ -56,14 +60,14 @@ public static class HeartSoosConfig
 
     public static void Save()
     {
-        _logger.LogDebug("Saving config");
+        Logger.LogDebug("Saving config");
         try
         {
-            File.WriteAllText(Path, JsonConvert.SerializeObject(_internalConfig, Formatting.Indented));
+            File.WriteAllText(Path, JsonSerializer.Serialize(_internalConfig, SerializerSettings));
         }
         catch (Exception e)
         {
-            _logger.LogError(e, "Error occurred while saving");
+            Logger.LogError(e, "Error occurred while saving");
         }
     }
 
@@ -85,17 +89,18 @@ public static class HeartSoosConfig
         }
     };
 
-    public class HeartSoosConf
+    public sealed class HeartSoosConf
     {
-        public IEnumerable<PushoverConfig> Paths { get; set; } = Array.Empty<PushoverConfig>();
+        public required IEnumerable<PushoverConfig> Paths { get; set; } = Array.Empty<PushoverConfig>();
 
-        public class PushoverConfig
+        public sealed class PushoverConfig
         {
-            public string Name { get; set; }
-            public IEnumerable<VrChatOscPushover> OscConfig { get; set; } = Array.Empty<VrChatOscPushover>();
-            public class VrChatOscPushover
+            public required string Name { get; set; }
+            public required IEnumerable<VrChatOscPushover> OscConfig { get; set; } = Array.Empty<VrChatOscPushover>();
+            
+            public sealed class VrChatOscPushover
             {
-                public string ParameterPath { get; set; }
+                public required string ParameterPath { get; set; }
             }
         }
     }

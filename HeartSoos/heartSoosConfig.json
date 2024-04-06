@@ -1,12 +1,1 @@
-{
-  "Paths": [
-    {
-      "Name": "default",
-      "OscConfig": [
-        {
-          "ParameterPath": "/avatar/parameters/HeartRate"
-        }
-      ]
-    }
-  ]
-}
+{"Paths":[{"Name":"default","OscConfig":[{"ParameterPath":"/avatar/parameters/HeartRate"}]}]}

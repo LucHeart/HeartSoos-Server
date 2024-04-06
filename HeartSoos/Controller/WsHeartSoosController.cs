@@ -1,23 +1,30 @@
-﻿using System.Net.WebSockets;
-using System.Text;
+﻿using System.Threading.Channels;
 using LucHeart.HeartSoos.Models;
+using LucHeart.HeartSoos.Utils;
 using Microsoft.AspNetCore.Mvc;
-using Newtonsoft.Json;
+using Microsoft.Extensions.Options;
+using JsonOptions = Microsoft.AspNetCore.Http.Json.JsonOptions;
 
 namespace LucHeart.HeartSoos.Controller;
 
 [ApiController]
 [Route("/ws")]
-public class WsHeartSoosController : ControllerBase
+public sealed class WsHeartSoosController : JsonWebsocketBaseController<HeartSoosWsData>
 {
-    private readonly ILogger _logger;
-    private readonly IHostApplicationLifetime _lifetime;
+    private static readonly List<WsHeartSoosController> ReceiverWebsockets = new();
 
-    public WsHeartSoosController(ILogger<WsHeartSoosController> logger, IHostApplicationLifetime lifetime)
+    private readonly Channel<HeartSoosWsData> _channel =
+        Channel.CreateUnbounded<HeartSoosWsData>();
+
+    public WsHeartSoosController(ILogger<WebsocketBaseController<HeartSoosWsData>> logger, IHostApplicationLifetime lifetime, IOptions<JsonOptions> jsonOptions) : base(logger, lifetime, jsonOptions)
     {
-        _logger = logger;
-        _lifetime = lifetime;
     }
+
+    public override string Id => _id;
+
+    private string _id;
+
+    #region Input
 
     [HttpGet("{id}")]
     public async Task Get(string id)
@@ -28,58 +35,25 @@ public class WsHeartSoosController : ControllerBase
             return;
         }
 
-        using var websocket = await HttpContext.WebSockets.AcceptWebSocketAsync();
-        await Logic(websocket, id);
+        _id = id;
+        WebSocket = await HttpContext.WebSockets.AcceptWebSocketAsync();
+        await Logic();
     }
-
-    private async Task Logic(WebSocket webSocket, string id)
+    
+    protected override void DataReceived(HeartSoosWsData? wsRequest)
     {
-        WebSocketReceiveResult result;
-        do
-        {
-            try
-            {
-                var message = await ReceiveFullMessage(webSocket, _lifetime.ApplicationStopping);
-                result = message.Item1;
-
-                var dec = Encoding.UTF8.GetString(message.Item2.ToArray());
-                try
-                {
-                    var json = JsonConvert.DeserializeObject<HeartSoosWsData>(dec);
-                    if (json == null) continue;
-                    HeartRateManager.SetHeartRate(id, json.HeartRate);
-                }
-                catch (JsonException e)
-                {
-                    _logger.LogError(e, "Error deserializing json, {Json}", dec);
-                }
-            }
-            catch (OperationCanceledException)
-            {
-                _logger.LogInformation("WebSocket connection terminated due to program shutdown");
-                return;
-            }
-        } while (!result.CloseStatus.HasValue);
-
-
-        await webSocket.CloseAsync(WebSocketCloseStatus.NormalClosure, result.CloseStatusDescription ?? "Normal close",
-            _lifetime.ApplicationStopping);
-        _logger.LogInformation("WebSocket connection closed");
+        LucTask.Run(DataReceivedTask(wsRequest));
     }
 
-    private static async Task<(WebSocketReceiveResult, IEnumerable<byte>)> ReceiveFullMessage(
-        WebSocket socket, CancellationToken cancelToken)
+    private async Task DataReceivedTask(HeartSoosWsData? wsRequest)
     {
-        WebSocketReceiveResult response;
-        var message = new List<byte>();
+        if (wsRequest == null) return;
+        HeartRateManager.SetHeartRate(Id, wsRequest.HeartRate);
+        Logger.LogInformation("HeartRate: {Id} - {HeartRate}", Id, wsRequest.HeartRate);
 
-        var buffer = new byte[4096];
-        do
-        {
-            response = await socket.ReceiveAsync(new ArraySegment<byte>(buffer), cancelToken);
-            message.AddRange(new ArraySegment<byte>(buffer, 0, response.Count));
-        } while (!response.EndOfMessage);
-
-        return (response, message);
+        foreach (var ws in ReceiverWebsockets.Where(x => x.Id == Id)) await ws.QueueMessage(wsRequest);
     }
+
+    #endregion
+
 }

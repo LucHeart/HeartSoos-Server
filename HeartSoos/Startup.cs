@@ -1,8 +1,8 @@
 ﻿using System.Net;
 using System.Net.Sockets;
+using System.Text.Json;
+using System.Text.Json.Serialization;
 using LucHeart.HeartSoos.Config;
-using LucHeart.LoggingHelper;
-using Newtonsoft.Json;
 
 namespace LucHeart.HeartSoos;
 
@@ -12,10 +12,19 @@ public class Startup
     {
         services.AddHttpContextAccessor();
 
-        services.AddControllers().AddNewtonsoftJson(options =>
+        services.AddControllers().AddJsonOptions(x =>
         {
-            options.SerializerSettings.ReferenceLoopHandling = ReferenceLoopHandling.Ignore;
+            x.JsonSerializerOptions.PropertyNameCaseInsensitive = true;
+            x.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter());
         });
+        
+        services.ConfigureHttpJsonOptions(options =>
+        {
+            options.SerializerOptions.PropertyNameCaseInsensitive = true;
+            options.SerializerOptions.PropertyNamingPolicy = JsonNamingPolicy.CamelCase;
+            options.SerializerOptions.Converters.Add(new JsonStringEnumConverter());
+        });
+        
         services.AddCors();
     }
 
@@ -23,7 +32,7 @@ public class Startup
     {
         ApplicationLogging.LoggerFactory = loggerFactory;
         var logger = ApplicationLogging.CreateLogger<Startup>();
-        app.UseLoggingHelperWithRequestLogging();
+        
         if (env.IsDevelopment()) app.UseDeveloperExceptionPage();
 
         var webSocketOptions = new WebSocketOptions
